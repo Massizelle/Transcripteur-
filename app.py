@@ -161,14 +161,28 @@ st.caption("Upload un enregistrement → transcription horodatée + compte rendu
 
 with st.sidebar:
     st.header("Réglages")
-    if CLE_SERVEUR:
-        cle = CLE_SERVEUR  # clé stockée dans les secrets, jamais affichée
-        st.success("Clé API configurée ✅")
-    else:
-        cle = st.text_input(
-            "Clé API Groq", type="password",
-            help="Gratuite, sans carte bancaire : https://console.groq.com/keys",
+    cle_perso = st.text_input(
+        "Ta clé API Groq", type="password",
+        placeholder="gsk_...",
+        help="Elle reste dans ta session et n'est enregistrée nulle part.",
+    )
+    with st.expander("🔑 Comment créer ma clé (gratuit, 2 min)"):
+        st.markdown(
+            "1. Va sur **[console.groq.com/keys](https://console.groq.com/keys)**\n"
+            "2. Crée un compte (e-mail ou Google), **sans carte bancaire**\n"
+            "3. Clique sur **Create API Key**, donne-lui un nom\n"
+            "4. **Copie la clé** (elle commence par `gsk_`), elle ne s'affiche qu'une fois\n"
+            "5. Colle-la dans le champ ci-dessus\n\n"
+            "Garde-la dans un endroit sûr pour la recoller la prochaine fois."
         )
+    if cle_perso.strip():
+        cle = cle_perso.strip()
+        st.success("Ta clé est utilisée ✅")
+    elif CLE_SERVEUR:
+        cle = CLE_SERVEUR  # clé par défaut stockée dans les secrets, jamais affichée
+        st.info("Clé par défaut utilisée.")
+    else:
+        cle = ""
     langue = st.selectbox("Langue de la réunion", ["fr", "en", "auto"], index=0)
     modele_stt = st.selectbox(
         "Modèle de transcription", ["whisper-large-v3", "whisper-large-v3-turbo"], index=0,
@@ -241,7 +255,8 @@ if fichier and st.button("🚀 Transcrire et résumer", type="primary", disabled
         statut.error(str(e))
 
 if not cle:
-    st.info("Colle ta clé API Groq dans le panneau de gauche pour commencer.")
+    st.info("👈 Colle ta clé API Groq dans le panneau de gauche pour commencer "
+            "(clique sur « Comment créer ma clé » si tu n'en as pas encore).")
 
 res = st.session_state.get("resultat")
 if res:
