@@ -129,15 +129,46 @@ SYS_FINAL = (
 
 # ---------------------------------------------------------------- interface
 st.set_page_config(page_title="Transcripteur de réunions", page_icon="🎙️", layout="wide")
+
+
+def secret(nom: str) -> str:
+    """Lit un secret (Streamlit Cloud / .streamlit/secrets.toml), sinon une variable d'environnement."""
+    try:
+        if nom in st.secrets:
+            return str(st.secrets[nom])
+    except Exception:
+        pass
+    return os.environ.get(nom, "")
+
+
+# --- Protection par mot de passe (si APP_PASSWORD est défini dans les secrets)
+MOT_DE_PASSE = secret("APP_PASSWORD")
+if MOT_DE_PASSE and not st.session_state.get("connecte"):
+    st.title("🔒 Transcripteur de réunions")
+    mdp = st.text_input("Mot de passe", type="password")
+    if mdp:
+        if mdp == MOT_DE_PASSE:
+            st.session_state["connecte"] = True
+            st.rerun()
+        else:
+            st.error("Mot de passe incorrect.")
+    st.stop()
+
+CLE_SERVEUR = secret("GROQ_API_KEY")
+
 st.title("🎙️ Transcripteur de réunions")
 st.caption("Upload un enregistrement → transcription horodatée + compte rendu + glossaire des termes techniques.")
 
 with st.sidebar:
     st.header("Réglages")
-    cle = st.text_input(
-        "Clé API Groq", value=os.environ.get("GROQ_API_KEY", ""), type="password",
-        help="Gratuite, sans carte bancaire : https://console.groq.com/keys",
-    )
+    if CLE_SERVEUR:
+        cle = CLE_SERVEUR  # clé stockée dans les secrets, jamais affichée
+        st.success("Clé API configurée ✅")
+    else:
+        cle = st.text_input(
+            "Clé API Groq", type="password",
+            help="Gratuite, sans carte bancaire : https://console.groq.com/keys",
+        )
     langue = st.selectbox("Langue de la réunion", ["fr", "en", "auto"], index=0)
     modele_stt = st.selectbox(
         "Modèle de transcription", ["whisper-large-v3", "whisper-large-v3-turbo"], index=0,
